@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>IndexedDB Students Demo</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #students { margin-top: 20px; }
+    .student { 
+      border: 1px solid #ddd; 
+      padding: 12px; 
+      margin: 8px 0; 
+      border-radius: 6px; 
+      background: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Students (from IndexedDB)</h2>
+  <div id="students">Loading...</div>
+
+  <script>
+    const DB_NAME = "SchoolDB";
+    const DB_VERSION = 1;
+    const STORE_NAME = "students";
+
+    let db;
+
+    // 1. Open (or create) database
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => {
+      console.error("Database error:", request.error);
+      document.getElementById("students").textContent = "Error opening database";
+    };
+
+    // Runs when database is created or version changes
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+      
+      // Create object store if it doesn't exist
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+        store.createIndex("name", "name", { unique: false });
+      }
+    };
+
+    // Database opened successfully
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      console.log("Database opened successfully");
+
+      // Add some students (only once - you can comment this out after first run)
+      addSampleStudents();
+
+      // Then show them
+      displayAllStudents();
+    };
+
+    function addSampleStudents() {
+      const transaction = db.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+
+      const students = [
+        { name: "Aisha Mwangi", age: 19, grade: "B+", course: "Computer Science" },
+        { name: "Brian Okoth",  age: 21, grade: "A",  course: "Data Science" },
+        { name: "Mercy Wanjiku", age: 18, grade: "A-", course: "Cyber Security" },
+        { name: "Kevin Omondi",  age: 20, grade: "B",  course: "Software Engineering" }
+      ];
+
+      students.forEach(student => store.add(student));
+
+      transaction.oncomplete = () => {
+        console.log("Sample students added");
+      };
+      transaction.onerror = () => {
+        console.error("Add error:", transaction.error);
+      };
+    }
+
+    function displayAllStudents() {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const students = request.result;
+        const container = document.getElementById("students");
+        
+        if (students.length === 0) {
+          container.innerHTML = "<p>No students found. Refresh after adding data.</p>";
+          return;
+        }
+
+        container.innerHTML = "";
+        students.forEach(student => {
+          const div = document.createElement("div");
+          div.className = "student";
+          div.innerHTML = `
+            <strong>${student.name}</strong><br>
+            Age: ${student.age} • Grade: ${student.grade}<br>
+            Course: ${student.course}
+          `;
+          container.appendChild(div);
+        });
+      };
+
+      request.onerror = () => {
+        console.error("Read error:", request.error);
+        document.getElementById("students").textContent = "Error reading students";
+      };
+    }
+
+  </script>
+</body>
+</html>

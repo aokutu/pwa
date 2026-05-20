@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <title>Indexed db</title>
+</head>
+<body>
+   <script>
+      //Creating a database
+      const request = indexedDB.open("myDatabase", 1);
+      if(indexedDB){
+         document.write("Database Created......");
+      }
+   </script>
+</body>
+</html>
